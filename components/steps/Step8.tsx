@@ -14,46 +14,43 @@ const CeladonEwerVisual: React.FC<{ isPouring: boolean }> = ({ isPouring }) => (
         </linearGradient>
       </defs>
       
-      {/* 瓶身与水流组 */}
+      {/* 瓶身 - 旋转组 */}
       <motion.g 
-        // 关键修复：使用固定的旋转中心 (100px 150px)，避免因水流路径(path)的出现改变SVG包围盒中心，导致旋转轴心偏移。
-        // 同时移除 className 中的 origin-[center_center]
+        // 旋转中心 (100, 150)
         style={{ transformOrigin: "100px 150px" }}
-        // 旋转 -45 度。配合水流路径向量 (-1, 1)，在屏幕坐标系中合成为垂直向下 (0, 1)。
         animate={isPouring ? { rotate: -45, x: 20, y: -20 } : { rotate: 0, x: 0, y: 0 }} 
         transition={{ type: "spring", stiffness: 60, damping: 15 }}
       >
-        {/* 水流 - 位于瓶口下方 */}
-        <AnimatePresence>
-            {isPouring && (
-                <motion.path
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 0.8 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4 }}
-                    // 几何计算：
-                    // 瓶身旋转 -45度 (逆时针)。
-                    // 要画出全局垂直线，局部向量需为 (-1, 1) 方向 (即指向左下)。
-                    // 起点 M35,90 (壶嘴)。
-                    // 终点需为 x = 35 - 300 = -265, y = 90 + 300 = 390。
-                    // 这样 Delta = (-300, 300)，正是 (-1, 1) 方向。
-                    d="M35,90 L-265,390" 
-                    fill="none" 
-                    stroke="#e0f2fe" 
-                    strokeWidth="5" 
-                    strokeLinecap="round"
-                    className="blur-[2px]"
-                />
-            )}
-        </AnimatePresence>
-
-        {/* 瓶身 */}
         <path d="M65,165 Q10,155 35,90 L50,95 Q30,140 75,160 Z" fill="url(#ewerGrad8)" stroke="#8a9678" strokeWidth="1" />
         <path d="M60,160 Q60,135 100,135 Q140,135 140,160 L145,240 Q145,275 100,275 Q55,275 55,240 Z" fill="url(#ewerGrad8)" stroke="#8a9678" strokeWidth="1" />
         <path d="M75,140 Q75,40 60,35 L140,35 Q125,40 125,140 Z" fill="url(#ewerGrad8)" stroke="#8a9678" strokeWidth="1.5" />
         <path d="M135,65 Q175,65 165,160 Q160,195 140,195" fill="none" stroke="url(#ewerGrad8)" strokeWidth="8" strokeLinecap="round" />
         <path d="M135,65 Q175,65 165,160 Q160,195 140,195" fill="none" stroke="#8a9678" strokeWidth="0.5" strokeLinecap="round" />
       </motion.g>
+
+      {/* 水流 - 静态组 (不随瓶身旋转，确保绝对垂直) */}
+      <AnimatePresence>
+          {isPouring && (
+              <motion.path
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 0.8 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4, delay: 0.2 }}
+                  // 坐标计算：
+                  // 旋转中心 (100, 150)。壶嘴原始位置 (35, 90)。
+                  // 旋转 -45 度后，壶嘴新位置约为 (11.6, 153.6)。
+                  // 加上位移 {x: 20, y: -20}，最终位置约为 (31.6, 133.6)。
+                  // 取整为 (32, 134)。
+                  // 绘制垂直直线 L32,450。
+                  d="M32,134 L32,450" 
+                  fill="none" 
+                  stroke="#e0f2fe" 
+                  strokeWidth="5" 
+                  strokeLinecap="round"
+                  className="blur-[2px]"
+              />
+          )}
+      </AnimatePresence>
     </svg>
   </div>
 );
@@ -144,8 +141,7 @@ const Step8: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           style={{ touchAction: 'none' }}
           whileTap={{ scale: 0.95 }}
           onDrag={handleDrag}
-          // 当注水时，强制移动到指定位置
-          // 微微调整偏移以对齐中心
+          // 当注水时，强制移动到指定位置 (x: 50 配合壶嘴位置 x:32 约等于居中)
           animate={isPouring ? { x: 50, y: -45 } : {}} 
           transition={{ type: "spring", stiffness: 50 }}
           className="absolute top-10 z-50 cursor-grab active:cursor-grabbing"
