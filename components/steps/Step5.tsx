@@ -144,9 +144,10 @@ const Step5: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
             {isKettleOn && (
               <motion.div 
                 key="snapped-kettle"
-                initial={{ y: -300, x: "-50%", opacity: 0, scale: 0.8 }} 
-                animate={{ y: -105, x: "-50%", opacity: 1, scale: 0.9 }} 
-                className="absolute top-1/2 left-1/2 pointer-events-none z-20"
+                // Adjusted positioning: Anchor to bottom-30% to sit correctly on stove
+                initial={{ y: -100, x: "-50%", opacity: 0, scale: 0.9 }} 
+                animate={{ y: 0, x: "-50%", opacity: 1, scale: 0.9 }} 
+                className="absolute bottom-[28%] left-1/2 pointer-events-none z-20"
                 style={{ transform: "translateX(-50%)" }}
               >
                 <CeladonEwerVisual isBoiling={isFireOn} progress={progress} />
