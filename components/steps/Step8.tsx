@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // 青瓷汤瓶组件
 const CeladonEwerVisual: React.FC<{ isPouring: boolean }> = ({ isPouring }) => (
-  <div className="relative w-36 h-48 md:w-44 md:h-60 flex items-center justify-center transition-all duration-300">
+  <div className="relative w-36 h-48 md:w-44 md:h-60 flex items-center justify-center transition-all duration-300 pointer-events-none">
     <svg viewBox="0 0 200 300" className="w-full h-full overflow-visible drop-shadow-xl">
       <defs>
         <linearGradient id="ewerGrad8" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -13,8 +13,35 @@ const CeladonEwerVisual: React.FC<{ isPouring: boolean }> = ({ isPouring }) => (
           <stop offset="100%" stopColor="#b8c2a8" />
         </linearGradient>
       </defs>
-      {/* 瓶身旋转动画 */}
-      <motion.g animate={isPouring ? { rotate: -25, x: -15, y: 10 } : { rotate: 0, x: 0, y: 0 }} className="origin-[40%_30%]">
+      
+      {/* 瓶身与水流组 */}
+      <motion.g 
+        // 调整位置：x设为 35 以配合父容器偏移对齐杯口
+        animate={isPouring ? { rotate: -45, x: 35, y: -45 } : { rotate: 0, x: 0, y: 0 }} 
+        transition={{ type: "spring", stiffness: 60, damping: 15 }}
+        className="origin-[center_center]"
+      >
+        {/* 水流 - 位于瓶口下方 */}
+        <AnimatePresence>
+            {isPouring && (
+                <motion.path
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 0.8 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                    // 修正水流路径：在 -45 度(左倾)旋转下，沿 (-1,1) 方向绘制直线以保持全局垂直
+                    // M35,90 为壶嘴位置，L-265,390 向左下延伸
+                    d="M35,90 L-265,390" 
+                    fill="none" 
+                    stroke="#e0f2fe" 
+                    strokeWidth="5" 
+                    strokeLinecap="round"
+                    className="blur-[2px]"
+                />
+            )}
+        </AnimatePresence>
+
+        {/* 瓶身 */}
         <path d="M65,165 Q10,155 35,90 L50,95 Q30,140 75,160 Z" fill="url(#ewerGrad8)" stroke="#8a9678" strokeWidth="1" />
         <path d="M60,160 Q60,135 100,135 Q140,135 140,160 L145,240 Q145,275 100,275 Q55,275 55,240 Z" fill="url(#ewerGrad8)" stroke="#8a9678" strokeWidth="1" />
         <path d="M75,140 Q75,40 60,35 L140,35 Q125,40 125,140 Z" fill="url(#ewerGrad8)" stroke="#8a9678" strokeWidth="1.5" />
@@ -27,7 +54,7 @@ const CeladonEwerVisual: React.FC<{ isPouring: boolean }> = ({ isPouring }) => (
 
 // 此时的茶盏组件 (建盏风格)
 const JianZhanCup: React.FC<{ isPouring: boolean }> = ({ isPouring }) => (
-  <div className="relative w-44 h-28 md:w-56 md:h-36 flex items-center justify-center">
+  <div className="relative w-44 h-28 md:w-56 md:h-36 flex items-center justify-center pointer-events-none">
     <svg viewBox="0 0 200 120" className="w-full h-full drop-shadow-2xl overflow-visible">
       {/* 盏托 */}
       <ellipse cx="100" cy="110" rx="80" ry="15" fill="#c4a47c" opacity="0.8" />
@@ -40,21 +67,21 @@ const JianZhanCup: React.FC<{ isPouring: boolean }> = ({ isPouring }) => (
 
       <AnimatePresence>
         {isPouring && (
-          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-             {/* 注入的水柱 */}
-             <motion.path 
-                initial={{ height: 0 }} 
-                animate={{ height: 60 }}
-                d="M100,0 L100,80" 
-                stroke="#e0f2fe" 
-                strokeWidth="4" 
-                strokeLinecap="round" 
-                className="blur-[1px] opacity-60"
+          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.2 }}>
+             {/* 承接水流的涟漪 */}
+             <motion.ellipse 
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: [0.5, 1.2, 1], opacity: [0, 0.8, 0.6] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                cx="100" cy="85" rx="15" ry="5"
+                fill="#e0f2fe"
+                className="blur-[2px]"
              />
              {/* 调和中的茶膏效果 */}
              <motion.ellipse 
                 initial={{ scale: 0.5 }}
                 animate={{ scale: 1.5, opacity: 0.8 }}
+                transition={{ duration: 2 }}
                 cx="100" cy="85" rx="25" ry="10" 
                 fill="#4d7c2c" 
                 className="blur-[2px]" 
@@ -79,7 +106,7 @@ const Step8: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
     if (cupElement) {
       const rect = cupElement.getBoundingClientRect();
       const point = { x: info.point.x, y: info.point.y };
-      const hitMargin = 60;
+      const hitMargin = 80;
       
       const isOver = 
         point.x > rect.left - hitMargin &&
@@ -91,38 +118,44 @@ const Step8: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         setIsPouring(true);
         setIsFinished(true);
         completeCalled.current = true;
-        setTimeout(onComplete, 2500);
+        setTimeout(onComplete, 3500);
       }
     }
   };
 
   return (
-    <div className="flex flex-col items-center w-full h-full justify-center gap-10 md:gap-16">
+    <div className="flex flex-col items-center w-full h-full justify-center gap-4 md:gap-10">
       
       {/* 核心展示区：茶瓶在上，茶盏在下 */}
-      <div className="flex flex-col items-center justify-center gap-12 md:gap-20 w-full max-w-lg">
+      <div className="relative flex flex-col items-center justify-center w-full max-w-lg h-[500px]">
         
         {/* 上方：可拖拽的茶瓶 */}
         <motion.div
-          drag
-          dragSnapToOrigin
+          drag={!isPouring} // 禁止在注水时拖动
+          dragSnapToOrigin={!isPouring} // 仅在未注水时回弹
           dragMomentum={false}
           dragTransition={{ bounceStiffness: 600, bounceDamping: 25 }}
           style={{ touchAction: 'none' }}
           whileTap={{ scale: 0.95 }}
           onDrag={handleDrag}
-          className="cursor-grab active:cursor-grabbing relative z-50"
+          // 当注水时，强制移动到指定位置
+          // 向上调整位置，y设为-45，x设为50，结合内部SVG偏移确保水流居中
+          animate={isPouring ? { x: 50, y: -45 } : {}} 
+          transition={{ type: "spring", stiffness: 50 }}
+          className="absolute top-10 z-50 cursor-grab active:cursor-grabbing"
         >
           <CeladonEwerVisual isPouring={isPouring} />
-          <div className="text-center mt-2">
-            <p className="text-[10px] text-stone-500 font-bold tracking-[0.2em] uppercase bg-white/40 px-3 py-1 rounded-full border border-stone-200 shadow-sm pointer-events-none">
-              {isFinished ? "正在注汤调膏" : "向下拖动茶瓶注汤"}
-            </p>
-          </div>
+          {!isPouring && (
+             <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <p className="text-[10px] text-stone-500 font-bold tracking-[0.2em] uppercase bg-white/40 px-3 py-1 rounded-full border border-stone-200 shadow-sm pointer-events-none">
+                向下拖动茶瓶注汤
+                </p>
+             </div>
+          )}
         </motion.div>
 
         {/* 下方：目标茶盏 */}
-        <div id="target-cup-8" className="relative group flex flex-col items-center">
+        <div id="target-cup-8" className="absolute bottom-20 flex flex-col items-center">
           <JianZhanCup isPouring={isPouring} />
           <span className="text-[10px] text-stone-400 font-bold tracking-[0.4em] uppercase mt-4">温热茶盏</span>
           {!isPouring && !isFinished && (
@@ -132,17 +165,27 @@ const Step8: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
       </div>
 
       {/* 提示文本区 */}
-      <div className="h-16 flex flex-col items-center justify-center text-center px-6">
+      <div className="h-12 flex flex-col items-center justify-center text-center px-6 z-10">
         <AnimatePresence mode="wait">
           {isFinished ? (
-            <motion.p 
+            <motion.div 
               key="finished"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-stone-700 font-bold text-xs tracking-[0.2em] uppercase"
+              className="flex flex-col items-center gap-2"
             >
-              “水少许，调如膏状，谓之调膏。”
-            </motion.p>
+              <p className="text-stone-700 font-bold text-xs tracking-[0.2em] uppercase">
+                “水少许，调如膏状，谓之调膏。”
+              </p>
+              <div className="w-12 h-1 bg-stone-200 rounded-full overflow-hidden">
+                 <motion.div 
+                   className="h-full bg-blue-400" 
+                   initial={{ width: 0 }} 
+                   animate={{ width: "100%" }} 
+                   transition={{ duration: 3 }} 
+                 />
+              </div>
+            </motion.div>
           ) : (
             <motion.p 
               key="hint"

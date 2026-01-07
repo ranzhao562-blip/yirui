@@ -1,8 +1,8 @@
 
 import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 
-// Mini visual of the roasted tea cake for Step 2
+// 炙烤好的茶饼（小图标）
 const RoastedTeaCakeVisual: React.FC = () => (
   <div className="relative w-20 h-20 rounded-full shadow-lg border border-stone-700 overflow-hidden" 
        style={{ background: 'radial-gradient(circle, #8c7355 0%, #5d4a35 100%)' }}>
@@ -16,115 +16,135 @@ const RoastedTeaCakeVisual: React.FC = () => (
   </div>
 );
 
-const TeaRollerVisual: React.FC<{ grindCount: number; isPlotted: boolean }> = ({ grindCount, isPlotted }) => {
-  // Movement logic for the roller and handle
-  const xOffset = grindCount % 2 === 0 ? -60 : 60;
+// 新版茶碾组件 - 严格对齐木杆与碾轮
+const TeaRollerVisual: React.FC<{ 
+  grindCount: number; 
+  isPlotted: boolean;
+  onGrind: () => void;
+}> = ({ grindCount, isPlotted, onGrind }) => {
+  const x = useMotionValue(0);
+  
+  // 移除旋转逻辑，仅保留x轴拖动
+  const lastX = useRef(0);
+
+  const handleDrag = (event: any, info: any) => {
+    const currentX = info.offset.x;
+    // 检测往复运动
+    if (Math.abs(currentX - lastX.current) > 20) {
+      onGrind();
+      lastX.current = currentX;
+    }
+  };
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <svg viewBox="0 0 400 300" className="w-full h-full drop-shadow-2xl">
-        {/* Trough Base (Stone block with carvings) */}
-        <g id="trough">
-          {/* Main Stone Body */}
-          <path 
-            d="M80,220 L120,130 L350,180 L320,270 Z" 
-            fill="#b5b0a1" 
-            stroke="#4a463c" 
-            strokeWidth="2" 
-          />
-          <path 
-            d="M80,220 L80,260 L320,310 L320,270 Z" 
-            fill="#8c877a" 
-            stroke="#4a463c" 
-            strokeWidth="2" 
-          />
-          
-          {/* Side Cloud Carvings (Yunwen) */}
-          <path 
-            d="M90,235 Q100,225 115,235 Q130,245 145,235 M160,245 Q175,235 190,245" 
-            fill="none" 
-            stroke="#5c584d" 
-            strokeWidth="1" 
-            opacity="0.6"
-          />
-          <path 
-            d="M220,260 Q235,250 250,260 Q265,270 280,260" 
-            fill="none" 
-            stroke="#5c584d" 
-            strokeWidth="1" 
-            opacity="0.6"
-          />
-          <path 
-            d="M100,250 Q110,245 120,250 Q130,255 140,250" 
-            fill="none" 
-            stroke="#5c584d" 
-            strokeWidth="1" 
-            opacity="0.4"
-          />
+      <svg viewBox="0 0 400 300" className="w-full h-full drop-shadow-2xl overflow-visible">
+        <defs>
+          <linearGradient id="stoneBaseGrad" x1="0" y1="0" x2="0" y2="1">
+             <stop offset="0%" stopColor="#d6d3c9" />
+             <stop offset="100%" stopColor="#b5b0a1" />
+          </linearGradient>
+          <linearGradient id="woodStickGrad" x1="0" y1="0" x2="0" y2="1">
+             <stop offset="0%" stopColor="#d4a373" />
+             <stop offset="50%" stopColor="#c4a47c" />
+             <stop offset="100%" stopColor="#a88b68" />
+          </linearGradient>
+          <filter id="noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
+            <feColorMatrix type="saturate" values="0" />
+            <feComposite operator="in" in2="SourceGraphic" result="monoNoise"/>
+            <feBlend in="SourceGraphic" in2="monoNoise" mode="multiply" />
+          </filter>
+        </defs>
 
-          {/* Oval Trough Opening */}
-          <ellipse 
-            cx="225" cy="195" rx="100" ry="45" 
-            transform="rotate(-15 225 195)"
-            fill="#4a463c" 
-            opacity="0.3"
-          />
-          <path 
-            d="M135,175 Q225,130 315,185 Q225,240 135,175" 
-            fill="#6b6659" 
-            stroke="#4a463c" 
-            strokeWidth="1" 
-          />
-
-          {/* Tea Residue (Appears inside trough) */}
-          <AnimatePresence>
-            {isPlotted && (
-              <motion.path
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 0.8, scale: 1 }}
-                d="M180,195 Q200,185 220,205 Q240,215 260,195"
-                stroke="#2d4a1a"
-                strokeWidth={5 + grindCount * 2}
-                strokeLinecap="round"
-                fill="none"
-                className="blur-[1px]"
-              />
-            )}
-          </AnimatePresence>
+        {/* --- 1. 石座底座 (Base Block) --- */}
+        <g filter="url(#noise)">
+          {/* Top Face (Trapezoid) */}
+          <path d="M40,200 L120,120 L380,120 L300,200 Z" fill="url(#stoneBaseGrad)" stroke="#8c877a" strokeWidth="1" />
+          {/* Front Face */}
+          <path d="M40,200 L300,200 L300,260 L40,260 Z" fill="#8c877a" stroke="#4a463c" strokeWidth="1" />
+          {/* Side Face (Right) */}
+          <path d="M300,200 L380,120 L380,180 L300,260 Z" fill="#757065" stroke="#4a463c" strokeWidth="1" />
         </g>
 
-        {/* The Moving Parts (Roller + Handle) */}
+        {/* --- 2. 碾槽 (Trough) --- */}
+        {/* Boat shape depression in the center of Top Face */}
+        {/* Adjusted coordinates to match the new perspective */}
+        <path d="M100,160 Q210,210 320,160 Q210,110 100,160" fill="#4a463c" stroke="#3a362e" strokeWidth="2" opacity="0.8"/>
+        
+        {/* 茶末 (Residue in trough) */}
+        <AnimatePresence>
+          {isPlotted && (
+            <motion.path
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.8 }}
+              d="M130,160 Q210,180 290,160"
+              stroke="#2d4a1a"
+              strokeWidth={4 + grindCount * 1.5}
+              strokeLinecap="round"
+              fill="none"
+              className="blur-[1px]"
+            />
+          )}
+        </AnimatePresence>
+
+        {/* --- 3. 移动组件: 木杆 + 石轮 (Moving Assembly) --- */}
         <motion.g 
-          animate={{ x: xOffset, y: xOffset * -0.2 }}
-          transition={{ type: 'spring', damping: 15, stiffness: 100 }}
+          drag={isPlotted ? "x" : false}
+          dragConstraints={{ left: -90, right: 90 }}
+          dragElastic={0.1}
+          onDrag={handleDrag}
+          style={{ x, cursor: isPlotted ? 'grab' : 'default' }}
+          whileTap={{ cursor: 'grabbing' }}
         >
-          {/* Wooden Handle/Axle */}
-          <path 
-            d="M80,110 L350,220 L350,230 L80,120 Z" 
-            fill="#c4a47c" 
-            stroke="#7d603c" 
-            strokeWidth="1.5"
-          />
-          <ellipse cx="350" cy="225" rx="4" ry="7" transform="rotate(22 350 225)" fill="#7d603c" />
-          
-          {/* Stone Roller Wheel */}
-          <g transform="translate(210, 165)">
-            {/* Main Wheel Face */}
-            <circle cx="0" cy="0" r="45" fill="#a8a394" stroke="#4a463c" strokeWidth="2" />
-            {/* Rim Pattern */}
-            <circle cx="0" cy="0" r="38" fill="none" stroke="#6b6659" strokeWidth="6" strokeDasharray="4 2" opacity="0.4" />
-            {/* Center Axle Hole */}
-            <circle cx="0" cy="0" r="10" fill="#6b6659" stroke="#4a463c" strokeWidth="1" />
-            {/* Axle Connection */}
-            <circle cx="0" cy="0" r="6" fill="#7d603c" />
-            
-            {/* Stone Texture on Wheel */}
-            <circle cx="-15" cy="-10" r="1" fill="#4a463c" opacity="0.3" />
-            <circle cx="10" cy="20" r="1.5" fill="#4a463c" opacity="0.2" />
-            <circle cx="20" cy="-5" r="1" fill="#4a463c" opacity="0.3" />
-          </g>
+            {/* 3.1 木杆 (Axle Stick) */}
+            {/* 绝对水平，居中穿过 (y=150) */}
+            <rect 
+                x="20" y="144" width="360" height="12" rx="4" 
+                fill="url(#woodStickGrad)" stroke="#78350f" strokeWidth="1" 
+                filter="url(#noise)"
+            />
+            {/* 杆头装饰 */}
+            <circle cx="30" cy="150" r="3" fill="#5d4037" />
+            <circle cx="370" cy="150" r="3" fill="#5d4037" />
+
+            {/* 3.2 石碾轮 (Stone Wheel) */}
+            {/* 轮子中心位于 (200, 150)，与木杆中心完全重合。不随移动旋转。 */}
+            <g>
+                {/* 轮身 */}
+                <circle cx="200" cy="150" r="55" fill="#a8a394" stroke="#4a463c" strokeWidth="2" filter="url(#noise)" />
+                
+                {/* 侧面光影，增加立体感 */}
+                <circle cx="200" cy="150" r="50" fill="none" stroke="#fff" strokeWidth="2" opacity="0.1" />
+                <circle cx="200" cy="150" r="50" fill="none" stroke="#000" strokeWidth="2" opacity="0.1" transform="translate(1,1)" />
+                
+                {/* 轮缘刻度 (Visual texture) */}
+                <circle cx="200" cy="150" r="44" fill="none" stroke="#6b6659" strokeWidth="8" strokeDasharray="4 6" opacity="0.3" />
+                
+                {/* 中心孔毂 (Hub) */}
+                <circle cx="200" cy="150" r="16" fill="#5c584d" stroke="#4a463c" strokeWidth="1" />
+            </g>
+
+            {/* 3.3 木杆中心点 (覆盖在轮子上，保持视觉静止，显示木杆穿过去) */}
+            <circle cx="200" cy="150" r="8" fill="#8c6239" stroke="#5d4037" strokeWidth="1" />
+            <circle cx="200" cy="150" r="4" fill="#5d4037" opacity="0.5" />
+
         </motion.g>
       </svg>
+      
+      {/* 交互提示 */}
+      {isPlotted && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 pointer-events-none z-10">
+          <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ x: [-40, 40, -40], opacity: [0, 1, 0] }}
+             transition={{ duration: 2, repeat: Infinity }}
+             className="text-stone-500/50 text-4xl font-bold"
+          >
+             ↔
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
@@ -133,7 +153,7 @@ const Step2: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const [isPlotted, setIsPlotted] = useState(false);
   const [grindCount, setGrindCount] = useState(0);
   const completeTriggered = useRef(false);
-  const REQUIRED_GRINDS = 6;
+  const REQUIRED_GRINDS = 40; 
 
   const handleGrind = () => {
     if (!isPlotted || completeTriggered.current) return;
@@ -150,12 +170,12 @@ const Step2: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
 
   return (
     <div className="flex flex-col items-center gap-8 w-full h-full justify-center">
-      <div 
-        className="relative w-full max-w-2xl h-96 cursor-pointer tap-highlight-transparent"
-        onClick={handleGrind}
-        style={{ WebkitTapHighlightColor: 'transparent' }}
-      >
-        <TeaRollerVisual grindCount={grindCount} isPlotted={isPlotted} />
+      <div className="relative w-full max-w-2xl h-96">
+        <TeaRollerVisual 
+          grindCount={grindCount} 
+          isPlotted={isPlotted} 
+          onGrind={handleGrind}
+        />
       </div>
 
       <div className="flex flex-col items-center gap-4">
@@ -176,16 +196,17 @@ const Step2: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           </motion.div>
         ) : (
           <div className="text-center space-y-2">
-            <div className="flex gap-2 justify-center">
-              {[...Array(REQUIRED_GRINDS)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`w-3 h-3 rounded-full border border-stone-300 transition-colors duration-300 ${i < grindCount ? 'bg-green-700 shadow-[0_0_5px_rgba(21,128,61,0.5)]' : 'bg-stone-200'}`} 
-                />
-              ))}
+            <div className="w-64 h-2 bg-stone-200 rounded-full overflow-hidden border border-stone-300">
+              <motion.div 
+                className="h-full bg-green-700"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min((grindCount / REQUIRED_GRINDS) * 100, 100)}%` }}
+              />
             </div>
             <p className="text-[10px] text-stone-500 font-bold tracking-[0.3em] uppercase animate-pulse">
-              点击碾轴来回滚动以碎茶 ({Math.min(grindCount, REQUIRED_GRINDS)}/{REQUIRED_GRINDS})
+              {grindCount < REQUIRED_GRINDS 
+                ? "左右拖动木杆碾茶" 
+                : "碾茶完成"}
             </p>
           </div>
         )}
