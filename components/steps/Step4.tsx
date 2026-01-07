@@ -1,44 +1,55 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const TeaBoxVisual: React.FC<{ scoopCount: number }> = ({ scoopCount }) => (
-  // Mobile: w-56 h-56, Desktop: w-72 h-72. Scale removed for better mobile control.
-  <div className="relative w-56 h-56 md:w-72 md:h-72 flex items-center justify-center">
-    <motion.div initial={{ x: 60, y: -40, rotate: 25 }} className="absolute z-0 opacity-90">
-      <svg width="200" height="140" viewBox="0 0 200 140" className="scale-75 md:scale-100">
-        <ellipse cx="100" cy="70" rx="90" ry="40" fill="#141414" stroke="#222" strokeWidth="1" />
-        <path d="M10,70 L10,85 Q10,125 100,125 Q190,125 190,85 L190,70" fill="#141414" stroke="#000" strokeWidth="1" />
-        <g opacity="0.6">
-          <path d="M60,50 Q100,20 140,50" stroke="#b8860b" strokeWidth="1.5" fill="none" />
-          <circle cx="100" cy="70" r="4" fill="#d4af37" />
-        </g>
-      </svg>
-    </motion.div>
-    <div className="relative z-10">
-      <svg width="240" height="200" viewBox="0 0 240 200" className="scale-75 md:scale-100">
-        <ellipse cx="120" cy="155" rx="110" ry="35" fill="rgba(0,0,0,0.15)" />
-        <path d="M15,90 L15,140 Q15,180 120,180 Q225,180 225,140 L225,90 Z" fill="#141414" stroke="#000" strokeWidth="1.5" />
-        <ellipse cx="120" cy="90" rx="105" ry="42" fill="#141414" />
-        <ellipse cx="120" cy="90" rx="102" ry="40" fill="#a52a2a" stroke="#800" strokeWidth="2" />
-        <ellipse cx="120" cy="95" rx="95" ry="34" fill="#700" />
-        <AnimatePresence>
-          {scoopCount > 0 && (
-            <motion.g
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 0.9 + (scoopCount * 0.033), y: -scoopCount * 1 }}
-            >
-              <ellipse cx="120" cy="98" rx="88" ry="30" fill="#4d7c2c" className="blur-[1.5px]" />
-              {[...Array(Math.min(20, 5 + scoopCount * 5))].map((_, i) => (
-                <circle key={i} cx={120 + (Math.random() - 0.5) * 120} cy={98 + (Math.random() - 0.5) * 40} r={1 + Math.random() * 2} fill="#2d4a1a" opacity="0.6" />
-              ))}
-            </motion.g>
-          )}
-        </AnimatePresence>
-      </svg>
+const TeaBoxVisual: React.FC<{ scoopCount: number }> = ({ scoopCount }) => {
+  // 缓存茶粉颗粒位置
+  const particles = useMemo(() => {
+    return [...Array(20)].map((_, i) => ({
+      id: i,
+      cx: 120 + (Math.random() - 0.5) * 120,
+      cy: 98 + (Math.random() - 0.5) * 40,
+      r: 1 + Math.random() * 2
+    }));
+  }, []);
+
+  return (
+    <div className="relative w-56 h-56 md:w-72 md:h-72 flex items-center justify-center">
+      <motion.div initial={{ x: 60, y: -40, rotate: 25 }} className="absolute z-0 opacity-90">
+        <svg width="200" height="140" viewBox="0 0 200 140" className="scale-75 md:scale-100">
+          <ellipse cx="100" cy="70" rx="90" ry="40" fill="#141414" stroke="#222" strokeWidth="1" />
+          <path d="M10,70 L10,85 Q10,125 100,125 Q190,125 190,85 L190,70" fill="#141414" stroke="#000" strokeWidth="1" />
+          <g opacity="0.6">
+            <path d="M60,50 Q100,20 140,50" stroke="#b8860b" strokeWidth="1.5" fill="none" />
+            <circle cx="100" cy="70" r="4" fill="#d4af37" />
+          </g>
+        </svg>
+      </motion.div>
+      <div className="relative z-10">
+        <svg width="240" height="200" viewBox="0 0 240 200" className="scale-75 md:scale-100">
+          <ellipse cx="120" cy="155" rx="110" ry="35" fill="rgba(0,0,0,0.15)" />
+          <path d="M15,90 L15,140 Q15,180 120,180 Q225,180 225,140 L225,90 Z" fill="#141414" stroke="#000" strokeWidth="1.5" />
+          <ellipse cx="120" cy="90" rx="105" ry="42" fill="#141414" />
+          <ellipse cx="120" cy="90" rx="102" ry="40" fill="#a52a2a" stroke="#800" strokeWidth="2" />
+          <ellipse cx="120" cy="95" rx="95" ry="34" fill="#700" />
+          <AnimatePresence>
+            {scoopCount > 0 && (
+              <motion.g
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 0.9 + (scoopCount * 0.033), y: -scoopCount * 1 }}
+              >
+                <ellipse cx="120" cy="98" rx="88" ry="30" fill="#4d7c2c" className="blur-[1.5px]" />
+                {particles.slice(0, Math.min(20, 5 + scoopCount * 5)).map((p) => (
+                  <circle key={p.id} cx={p.cx} cy={p.cy} r={p.r} fill="#2d4a1a" opacity="0.6" />
+                ))}
+              </motion.g>
+            )}
+          </AnimatePresence>
+        </svg>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TeaSpoonVisual: React.FC<{ hasTea: boolean }> = ({ hasTea }) => (
   <div className="relative w-48 h-12 md:w-64 md:h-16 flex items-center">
@@ -86,17 +97,25 @@ const Step4: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
 
   return (
     <div className="flex flex-col items-center justify-between w-full h-full py-6 md:py-10">
-      {/* Container for Saucer and Box */}
       <div className="flex-1 flex flex-row items-center justify-center gap-4 md:gap-16 w-full px-4 md:px-10">
         <div className="flex flex-col items-center gap-6">
           <div className="relative w-32 h-24 md:w-44 md:h-32 flex items-center justify-center">
-            <svg width="100%" height="100%" viewBox="0 0 160 100">
-              <ellipse cx="80" cy="50" rx="70" ry="35" fill="#e5e5e5" stroke="#ccc" strokeWidth="1" />
-              <ellipse cx="80" cy="50" rx="65" ry="30" fill="#fff" />
+            <svg width="100%" height="100%" viewBox="0 0 160 100" className="overflow-visible">
+              <defs>
+                <linearGradient id="celadonSaucerGrad4" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#e1e8d5" />
+                  <stop offset="50%" stopColor="#d4dcc6" />
+                  <stop offset="100%" stopColor="#b8c2a8" />
+                </linearGradient>
+              </defs>
+              <ellipse cx="80" cy="50" rx="72" ry="37" fill="rgba(0,0,0,0.1)" transform="translate(0, 3)" />
+              <ellipse cx="80" cy="50" rx="70" ry="35" fill="url(#celadonSaucerGrad4)" stroke="#8a9678" strokeWidth="1.5" />
+              <ellipse cx="80" cy="50" rx="64" ry="29" fill="#d4dcc6" opacity="0.4" />
               <motion.path animate={!scooped ? { scale: 1, opacity: 1 } : { scale: 0.9, opacity: 0.6 }} d="M40,50 Q80,75 120,50 Q80,25 40,50" fill="#4d7c2c" className="blur-[2px]" />
+              <ellipse cx="80" cy="42" rx="60" ry="10" fill="#fff" opacity="0.1" />
             </svg>
           </div>
-          <span className="text-[10px] text-stone-400 font-bold tracking-[0.3em] uppercase">研磨茶碟</span>
+          <span className="text-[10px] text-stone-400 font-bold tracking-[0.3em] uppercase">青瓷研磨碟</span>
         </div>
         <div className="flex flex-col items-center">
           <TeaBoxVisual scoopCount={scoopCount} />
