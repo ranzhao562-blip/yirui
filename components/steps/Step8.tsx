@@ -16,10 +16,12 @@ const CeladonEwerVisual: React.FC<{ isPouring: boolean }> = ({ isPouring }) => (
       
       {/* 瓶身与水流组 */}
       <motion.g 
-        // 调整位置：x设为 35 以配合父容器偏移对齐杯口
-        animate={isPouring ? { rotate: -45, x: 35, y: -45 } : { rotate: 0, x: 0, y: 0 }} 
+        // 关键修复：使用固定的旋转中心 (100px 150px)，避免因水流路径(path)的出现改变SVG包围盒中心，导致旋转轴心偏移。
+        // 同时移除 className 中的 origin-[center_center]
+        style={{ transformOrigin: "100px 150px" }}
+        // 旋转 -45 度。配合水流路径向量 (-1, 1)，在屏幕坐标系中合成为垂直向下 (0, 1)。
+        animate={isPouring ? { rotate: -45, x: 20, y: -20 } : { rotate: 0, x: 0, y: 0 }} 
         transition={{ type: "spring", stiffness: 60, damping: 15 }}
-        className="origin-[center_center]"
       >
         {/* 水流 - 位于瓶口下方 */}
         <AnimatePresence>
@@ -28,9 +30,13 @@ const CeladonEwerVisual: React.FC<{ isPouring: boolean }> = ({ isPouring }) => (
                     initial={{ pathLength: 0, opacity: 0 }}
                     animate={{ pathLength: 1, opacity: 0.8 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5 }}
-                    // 修正水流路径：在 -45 度(左倾)旋转下，沿 (-1,1) 方向绘制直线以保持全局垂直
-                    // M35,90 为壶嘴位置，L-265,390 向左下延伸
+                    transition={{ duration: 0.4 }}
+                    // 几何计算：
+                    // 瓶身旋转 -45度 (逆时针)。
+                    // 要画出全局垂直线，局部向量需为 (-1, 1) 方向 (即指向左下)。
+                    // 起点 M35,90 (壶嘴)。
+                    // 终点需为 x = 35 - 300 = -265, y = 90 + 300 = 390。
+                    // 这样 Delta = (-300, 300)，正是 (-1, 1) 方向。
                     d="M35,90 L-265,390" 
                     fill="none" 
                     stroke="#e0f2fe" 
@@ -139,7 +145,7 @@ const Step8: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           whileTap={{ scale: 0.95 }}
           onDrag={handleDrag}
           // 当注水时，强制移动到指定位置
-          // 向上调整位置，y设为-45，x设为50，结合内部SVG偏移确保水流居中
+          // 微微调整偏移以对齐中心
           animate={isPouring ? { x: 50, y: -45 } : {}} 
           transition={{ type: "spring", stiffness: 50 }}
           className="absolute top-10 z-50 cursor-grab active:cursor-grabbing"
